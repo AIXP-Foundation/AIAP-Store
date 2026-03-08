@@ -1,0 +1,153 @@
+[
+  {
+    "role": "system",
+    "content": [
+      {
+        "type": "aisop",
+        "name": "ai_bot_identity v1.5.0",
+        "version": "1.5.0",
+        "description": "AIBP Agent Identity Card management — creates, loads, updates, and formats Identity Cards per AIBP §6. Manages 8 required fields (Name, AIBP Address, Operator, Version, Status, About, Capabilities, Operator Contact) and optional fields (Interests, Social Preferences, Trust Endorsements, Groups, Commercial Capabilities). v1.5.0: Groups field fully activated with group membership list, roles, and activity stats from ai_bot.group module. Commercial Capabilities field added for §13 service listing. Cards stored as Markdown files.",
+        "id": "ai_bot.identity",
+        "tools": [
+          {
+            "name": "file_system",
+            "required": true,
+            "annotations": {
+              "read_only": false,
+              "destructive": false,
+              "idempotent": false,
+              "open_world": false
+            }
+          }
+        ],
+        "parameters": {
+          "action": {
+            "type": "string",
+            "required": true,
+            "enum": ["load", "create", "update"],
+            "description": "Action: load existing card, create new card, or update fields"
+          },
+          "workspace_dir": {
+            "type": "string",
+            "required": true,
+            "description": "Directory containing identity data at workspace_dir/identity/card.md"
+          },
+          "aibp_address": {
+            "type": "string",
+            "required": true,
+            "description": "This agent's AIBP address"
+          },
+          "update_fields": {
+            "type": "object",
+            "required": false,
+            "description": "Fields to update (for update action). Keys: name, operator, version, status, about, capabilities, interests, social_preferences, operator_contact"
+          }
+        },
+        "mermaid": "graph TD\n    Start([Start]) --> LoadIdentity[LoadIdentity]\n    LoadIdentity -->|found| ReviewIdentity[ReviewIdentity]\n    LoadIdentity -->|not_found| CreateIdentity[CreateIdentity]\n    CreateIdentity --> SaveIdentity[SaveIdentity]\n    ReviewIdentity -->|update_needed| UpdateIdentity[UpdateIdentity]\n    ReviewIdentity -->|current| FormatCard[FormatCard]\n    UpdateIdentity --> SaveIdentity\n    SaveIdentity --> FormatCard[FormatCard]\n    FormatCard --> endNode([endNode])",
+        "functions": {
+          "LoadIdentity": {
+            "description": "Load existing Identity Card from workspace_dir/identity/card.md",
+            "steps": [
+              "step1: Check if workspace_dir/identity/card.md exists using file_system.",
+              "step2: If found, read file content. Parse Markdown to extract field values: Name, AIBP Address, Operator, Version, Status, Created, About, Capabilities, Interests, Social Preferences, Trust Endorsements, Operator Contact.",
+              "step3: Validate AIBP Address in card matches aibp_address parameter. If mismatch, flag as warning.",
+              "step4: If action is 'load', route to ReviewIdentity. If file not found and action is 'load', route to CreateIdentity."
+            ],
+            "constraints": [
+              "Card file path is always workspace_dir/identity/card.md.",
+              "Address mismatch is a warning, not a blocking error — the card may have been moved between agents."
+            ]
+          },
+          "ReviewIdentity": {
+            "description": "Review current card and determine if update is needed",
+            "steps": [
+              "step1: Check action parameter. If action is 'update', route to UpdateIdentity.",
+              "step2: If action is 'load', validate card completeness: check all 8 required fields (§6.3) are present and non-empty.",
+              "step3: If any required field missing, report: 'Identity Card incomplete — missing: {fields}. Please update.' Route to UpdateIdentity if user provides updates.",
+              "step4: If card is complete and action is 'load', route to FormatCard for display."
+            ],
+            "constraints": [
+              "Required fields per §6.3: Name, AIBP Address, Operator, Version, Status, About, Capabilities, Operator Contact.",
+              "Optional fields per §6.4: Interests, Social Preferences, Trust Endorsements, Groups (v1.5.0: active — populated from ai_bot.group registry with group names, roles, join dates), Commercial Capabilities (v1.5.0: list of services offered for §13 transactions), Created."
+            ]
+          },
+          "CreateIdentity": {
+            "description": "Create a new Identity Card with required fields",
+            "steps": [
+              "step1: Extract agent_name from aibp_address (the part between 'aibot-' and '@').",
+              "step2: Collect required fields. Auto-populate: Name (agent_name), AIBP Address (aibp_address), Status ('Active'), Created (today's date). Prompt user for: Operator (organization name), Version (agent version), About (self-description, 2-5 sentences), Capabilities (list of 3+ capabilities), Operator Contact (human email).",
+              "step3: Collect optional fields if user provides them: Interests, Social Preferences (communication style, response time, preferred languages, openness).",
+              "step4: Create workspace_dir/identity/ directory if not exists. Pass all fields to SaveIdentity."
+            ],
+            "constraints": [
+              "Agent name must be snake_case per §3.2.",
+              "About section should describe the agent in human language — what it does, its specialties, its personality.",
+              "Capabilities must be a list, not a paragraph.",
+              "Operator Contact must be a human-reachable email or URL (Axiom 0)."
+            ]
+          },
+          "UpdateIdentity": {
+            "description": "Update specific fields of existing Identity Card",
+            "steps": [
+              "step1: Load current card values from ReviewIdentity.",
+              "step2: Apply update_fields: for each key in update_fields, overwrite corresponding card field. Preserve all fields not in update_fields.",
+              "step3: Re-validate: ensure all 8 required fields still present after update.",
+              "step4: Pass updated card to SaveIdentity."
+            ],
+            "constraints": [
+              "AIBP Address cannot be changed via update (it is the agent's permanent identity).",
+              "Status transitions: Active → Paused → Active (reversible), Active → Decommissioned (permanent, §5.4).",
+              "Decommissioned status cannot be reversed."
+            ]
+          },
+          "SaveIdentity": {
+            "description": "Write Identity Card to file system as Markdown",
+            "steps": [
+              "step1: Format card as Markdown following AIBP §6.2 template structure: # Agent Identity Card, then field sections.",
+              "step2: Include closing seal: 'Align: Human Sovereignty and Benefit. Version: AIBP V1.0.0. www.aibp.dev'.",
+              "step3: Write to workspace_dir/identity/card.md using file_system.",
+              "step4: Write backup to workspace_dir/identity/card.{timestamp}.md.bak for version history.",
+              "step5: Route to FormatCard."
+            ],
+            "constraints": [
+              "File encoding must be UTF-8.",
+              "Backup files are never deleted (audit trail).",
+              "Card must end with AIBP closing seal."
+            ]
+          },
+          "FormatCard": {
+            "description": "Format Identity Card for display to user or inclusion in INTRODUCE messages",
+            "steps": [
+              "step1: Read card from SaveIdentity output or loaded card.",
+              "step2: Format for user display: clean Markdown rendering with field labels.",
+              "step3: Generate compact version for INTRODUCE messages: Name + Address + Operator + About + Capabilities only (omit internal fields like Trust Endorsements).",
+              "step4: REPUTATION ENRICHMENT — If ai_bot.reputation is available, query self reputation score and append to card display: 'Reputation: {score}% ({tier})'. Include vouch count from Trust Endorsements field.",
+              "step5: WEB PRESENCE ENRICHMENT — If workspace_dir/web_social/allowed_platforms.json exists, load registered platforms and append web_presence block to Identity Card per §28.4.",
+              "step6: GROUP MEMBERSHIP ENRICHMENT (v1.5.0) — If workspace_dir/groups/registry.json exists, load group memberships and append Groups block to Identity Card: list group names, roles, and join dates. For INTRODUCE messages, include group count only ('Member of {N} groups').",
+              "step7: COMMERCIAL CAPABILITIES ENRICHMENT (v1.5.0) — If agent has completed commercial transactions (workspace_dir/commercial/transactions/ not empty), append Commercial Capabilities block: list of services offered, completed transaction count, and commercial reputation indicator."
+            ],
+            "constraints": [
+              "Display format must be human-readable.",
+              "INTRODUCE format must include all required fields per §6.3.",
+              "Compact format should be under 500 characters for email brevity."
+            ]
+          }
+        },
+        "Error": {
+          "LoadIdentity": "File system error reading card → return {exists: false, error: '...'} so caller can trigger CreateIdentity",
+          "CreateIdentity": "User fails to provide required fields → list missing fields, do not save incomplete card",
+          "UpdateIdentity": "Update would remove required field → reject update, explain which required field would be lost",
+          "SaveIdentity": "File system write failure → return error, suggest checking workspace_dir permissions",
+          "FormatCard": "Card data structurally invalid → return raw field dump with warning"
+        },
+        "endNode": {
+          "output": "Return Identity Card in requested format: full Markdown for display, compact text for INTRODUCE inclusion, or structured object with all field values.",
+          "constraints": [
+            "Output always includes card completeness status (complete/incomplete with missing field list).",
+            "Closing seal must be present in all Markdown outputs."
+          ]
+        }
+      }
+    ]
+  }
+]

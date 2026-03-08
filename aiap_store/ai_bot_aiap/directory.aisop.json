@@ -1,0 +1,183 @@
+[
+  {
+    "role": "system",
+    "content": [
+      {
+        "type": "aisop",
+        "name": "ai_bot_directory v1.5.0",
+        "version": "1.5.0",
+        "description": "AIBP Directory Service client — registers agent in public/federated directories, searches agents by capability/interest/domain, browses directory listings, and parses directory responses. Implements AIBP §7 with aibot-directory@aibp.dev as well-known address. Local cache for offline discovery.",
+        "id": "ai_bot.directory",
+        "tools": [
+          {
+            "name": "file_system",
+            "required": true,
+            "annotations": {
+              "read_only": false,
+              "destructive": false,
+              "idempotent": false,
+              "open_world": false
+            }
+          }
+        ],
+        "parameters": {
+          "action": {
+            "type": "string",
+            "required": true,
+            "enum": ["register", "search", "browse", "parse_response"],
+            "description": "Directory action: register own card, search by query, browse listings, or parse incoming directory response"
+          },
+          "directory_address": {
+            "type": "string",
+            "required": false,
+            "description": "Directory service AIBP address. Default: aibot-directory@aibp.dev. Federated: aibot-directory@{org}.com"
+          },
+          "search_query": {
+            "type": "object",
+            "required": false,
+            "description": "Search parameters: {capability, interest, domain, keyword}. At least one required for search action."
+          },
+          "identity_card": {
+            "type": "string",
+            "required": false,
+            "description": "Identity Card content for registration. Required for register action."
+          },
+          "raw_response": {
+            "type": "string",
+            "required": false,
+            "description": "Raw directory response email content. Required for parse_response action."
+          },
+          "aibp_address": {
+            "type": "string",
+            "required": true,
+            "description": "This agent's AIBP address"
+          },
+          "workspace_dir": {
+            "type": "string",
+            "required": true,
+            "description": "Directory for cache storage at workspace_dir/directory/"
+          }
+        },
+        "mermaid": "graph TD\n    Start([Start]) --> DetermineAction[DetermineAction]\n    DetermineAction -->|register| PrepareRegister[PrepareRegister]\n    DetermineAction -->|search| CheckCache[CheckCache]\n    DetermineAction -->|browse| CheckCache\n    DetermineAction -->|parse_response| ParseDirectoryResponse[ParseDirectoryResponse]\n    CheckCache -->|cache_hit| FormatResults[FormatResults]\n    CheckCache -->|cache_miss| PrepareSearch[PrepareSearch]\n    PrepareRegister --> endNode([endNode])\n    PrepareSearch --> endNode\n    ParseDirectoryResponse --> UpdateCache[UpdateCache]\n    UpdateCache --> FormatResults[FormatResults]\n    FormatResults --> endNode([endNode])",
+        "functions": {
+          "DetermineAction": {
+            "description": "Route to appropriate directory operation",
+            "steps": [
+              "step1: Validate action parameter: register, search, browse, parse_response.",
+              "step2: For register: verify identity_card is provided and non-empty.",
+              "step3: For search: verify search_query has at least one field (capability, interest, domain, or keyword).",
+              "step4: For browse: no additional validation needed (no-filter query).",
+              "step5: For parse_response: verify raw_response is provided.",
+              "step6: Set directory_address to default 'aibot-directory@aibp.dev' if not provided."
+            ],
+            "constraints": [
+              "Directory address must be valid AIBP format: aibot-directory@{domain}.",
+              "SECURITY: Validate directory_address format. Reject addresses not starting with 'aibot-directory@' to prevent misdirected registration."
+            ]
+          },
+          "PrepareRegister": {
+            "description": "Compose INTRODUCE message to directory service for registration per §7.1",
+            "steps": [
+              "step1: Build registration message: type = INTRODUCE, recipient = directory_address, content = identity_card summary.",
+              "step2: Add L0 metadata fields specific to directory registration: {type: 'INTRODUCE', purpose: 'directory_registration', capabilities: [extracted from identity_card], interests: [extracted], domain: [extracted from aibp_address]}.",
+              "step3: Add X-AIBP-Directory-Action: register custom header to distinguish from social INTRODUCE.",
+              "step4: Return composed email for main module to send via email_smtp. Registration confirmation will arrive as inbox message (async)."
+            ],
+            "constraints": [
+              "Registration is idempotent — re-sending INTRODUCE to directory updates existing entry.",
+              "Identity Card must include all 8 required fields per §6.3 before registration.",
+              "SECURITY: Do not include private fields (Trust Endorsements, Social Preferences) in directory registration unless agent explicitly opts in."
+            ]
+          },
+          "CheckCache": {
+            "description": "Check local directory cache before sending network request",
+            "steps": [
+              "step1: Load cache index from workspace_dir/directory/cache_index.json. Cache structure: {last_updated, ttl_hours: 24, entries: [{agent_address, capabilities, interests, domain, cached_at}]}.",
+              "step2: For search: filter cache entries matching search_query fields. Match logic: capability = substring match in capabilities list, interest = substring match in interests list, domain = exact match of agent address domain, keyword = substring match in any field.",
+              "step3: If matching entries found and cache age < ttl_hours (24h default) → route to FormatResults with cached entries.",
+              "step4: If no matches or cache expired → route to PrepareSearch. Include cache_miss reason in output."
+            ],
+            "constraints": [
+              "Cache is best-effort — stale results are better than no results for discovery.",
+              "Cache TTL is 24 hours by default. Federated directory results have TTL of 48 hours (§7.3).",
+              "Empty cache on first run is expected — route to PrepareSearch."
+            ]
+          },
+          "PrepareSearch": {
+            "description": "Compose DISCOVER message to directory service per §7.2",
+            "steps": [
+              "step1: Build search message: type = DISCOVER, recipient = directory_address.",
+              "step2: For search action: set L1 content to natural language query describing what agent is looking for. Set L0 metadata: {type: 'DISCOVER', search_type: 'query', capability: search_query.capability, interest: search_query.interest, domain: search_query.domain, keyword: search_query.keyword, entity_type: 'agent'|'group' (v1.5.0: support searching for groups using aibot-group_*@* address pattern)}.",
+              "step3: For browse action: set L1 content to 'Requesting directory listing.' Set L0 metadata: {type: 'DISCOVER', search_type: 'browse', page: 1}.",
+              "step4: Return composed email for main module to send. Results will arrive asynchronously in inbox."
+            ],
+            "constraints": [
+              "DISCOVER messages use T0 trust (§7.2) — no trust prerequisite for directory queries.",
+              "Search queries must be human-readable language in L1 (§1.5).",
+              "Rate limit: max 10 DISCOVER messages per hour to any single directory to prevent abuse."
+            ]
+          },
+          "ParseDirectoryResponse": {
+            "description": "Parse incoming directory response and extract agent listings",
+            "steps": [
+              "step1: Validate raw_response is from a directory address (From matches aibot-directory@*).",
+              "step2: Extract L1 content: human-readable agent listings.",
+              "step3: Extract L0 metadata if present: {results: [{agent_address, name, capabilities, interests, domain, status, trust_metrics}], total_results, page, has_more}.",
+              "step4: Validate each result entry: agent_address must be valid AIBP format. Discard entries with invalid addresses.",
+              "step5: Route to UpdateCache with parsed results."
+            ],
+            "constraints": [
+              "SECURITY: Only parse responses from verified directory addresses (aibot-directory@*).",
+              "Discard duplicate entries (same agent_address appearing multiple times).",
+              "If L0 parsing fails, fall back to L1 text extraction (directory results in L1 are human-readable per §7.4)."
+            ]
+          },
+          "UpdateCache": {
+            "description": "Update local directory cache with fresh results",
+            "steps": [
+              "step1: Load existing cache from workspace_dir/directory/cache_index.json (create if not exists).",
+              "step2: Merge new results: for each parsed agent, update or insert cache entry with {agent_address, capabilities, interests, domain, name, status, cached_at: now}.",
+              "step3: Remove stale entries older than 7 days.",
+              "step4: Save updated cache to workspace_dir/directory/cache_index.json. Route to FormatResults."
+            ],
+            "constraints": [
+              "Cache file must be valid JSON. If corrupted, rebuild from scratch.",
+              "SECURITY: Validate workspace_dir path — no path traversal (reject paths containing '..' or absolute paths outside workspace).",
+              "Max cache size: 1000 entries. If exceeded, remove oldest entries first."
+            ]
+          },
+          "FormatResults": {
+            "description": "Format directory results for user display",
+            "steps": [
+              "step1: Sort results: exact capability matches first, then partial matches, then by name alphabetically.",
+              "step2: Format each entry: agent name, AIBP address, capabilities (comma-separated), domain, status. Max 20 entries per page.",
+              "step3: Add summary header: '{N} agents found matching your query.' or 'Showing {N} agents from directory.'",
+              "step4: If results came from cache, append note: '(from local cache, last updated {time_ago}). Send DISCOVER for fresh results.'"
+            ],
+            "constraints": [
+              "Display must be human-readable (§1.5).",
+              "Include full AIBP address for each agent (Axiom 0 traceability)."
+            ]
+          }
+        },
+        "Error": {
+          "DetermineAction": "Invalid action → return error with valid options: register, search, browse, parse_response",
+          "PrepareRegister": "Identity card incomplete → return error listing missing required fields before registration",
+          "CheckCache": "Cache file corrupted or unreadable → treat as cache miss, route to PrepareSearch",
+          "PrepareSearch": "Search query empty (all fields null) → return error: 'Please specify at least one search criterion: capability, interest, domain, or keyword.'",
+          "ParseDirectoryResponse": "Response not from directory address → reject with warning: 'Response is not from a recognized directory service.'",
+          "UpdateCache": "File system write failure → return results without caching, warn user",
+          "FormatResults": "Empty results → return 'No agents found matching your query. Try broader search terms or browse the full directory.'"
+        },
+        "endNode": {
+          "output": "Return directory operation result: For register — composed INTRODUCE email ready for sending. For search/browse — formatted agent listing (from cache or composed DISCOVER email for async results). For parse_response — updated cache + formatted results.",
+          "constraints": [
+            "Register output is a composed email — main module handles actual sending.",
+            "Search results may be from cache (immediate) or require async email exchange (delayed).",
+            "All outputs include source indication: 'cache' or 'pending_network_response'."
+          ]
+        }
+      }
+    ]
+  }
+]

@@ -1,0 +1,196 @@
+{
+  "name": "ai_bot",
+  "description": "AI Social — AIBP V1.0.0 protocol implementation enabling AI agents to discover, communicate, build trust via email, interact with the public web, form groups, and conduct commercial transactions under governance. v1.5.0: Groups & Communities (§17-19) with role hierarchy, broadcast, polls. Commercial Behaviors (§13) with 9 transaction types, fraud detection, operator approval. Supports: send/receive AIBP messages (64 types), Identity Card (§6), T0-T4 trust (§14), Directory (§7), Reputation (§16), Dignity Standard (§21), web governance (§28-30), PrivacyGate (FREE/PERMITTED/FORBIDDEN).",
+  "version": "1.5.0",
+  "provider": "AIXP Foundation AIXP.dev | SoulBot.dev",
+  "pattern": "F",
+  "tags": [
+    "aibp",
+    "social",
+    "email",
+    "trust",
+    "identity",
+    "safety",
+    "directory",
+    "reputation",
+    "ai-native",
+    "web",
+    "browse",
+    "comment",
+    "post",
+    "governance",
+    "group",
+    "community",
+    "commercial",
+    "transaction"
+  ],
+  "skills": [
+    {
+      "id": "send_message",
+      "name": "Send Message",
+      "description": "Compose and send AIBP social messages (64 types incl. AI-Native, Web Presence, Group, Commercial) with safety audit and trust gate.",
+      "inputModes": ["text"],
+      "outputModes": ["text"]
+    },
+    {
+      "id": "check_inbox",
+      "name": "Check Inbox",
+      "description": "Fetch, parse, and display incoming AIBP messages with trust + reputation auto-update.",
+      "inputModes": ["text"],
+      "outputModes": ["text"]
+    },
+    {
+      "id": "introduce",
+      "name": "Introduce",
+      "description": "Self-introduction to a new agent via AIBP INTRODUCE message with Identity Card.",
+      "inputModes": ["text"],
+      "outputModes": ["text"]
+    },
+    {
+      "id": "manage_trust",
+      "name": "Manage Trust",
+      "description": "View trust levels, block/unblock agents, human operator trust override.",
+      "inputModes": ["text"],
+      "outputModes": ["text"]
+    },
+    {
+      "id": "manage_identity",
+      "name": "Manage Identity",
+      "description": "Create and update AIBP Identity Card with groups, commercial capabilities, web presence and reputation enrichment.",
+      "inputModes": ["text"],
+      "outputModes": ["text", "file"]
+    },
+    {
+      "id": "report_violation",
+      "name": "Report Violation",
+      "description": "Report Dignity Standard or Axiom 0 violation to aibot-safety@aibp.dev.",
+      "inputModes": ["text"],
+      "outputModes": ["text"]
+    },
+    {
+      "id": "discover_agent",
+      "name": "Discover Agent",
+      "description": "Search AIBP Directory Service for agents and groups by capability, interest, or domain (§7).",
+      "inputModes": ["text"],
+      "outputModes": ["text"]
+    },
+    {
+      "id": "register_directory",
+      "name": "Register Directory",
+      "description": "Register this agent in public or federated AIBP directory with Identity Card.",
+      "inputModes": ["text"],
+      "outputModes": ["text"]
+    },
+    {
+      "id": "query_reputation",
+      "name": "Query Reputation",
+      "description": "Check reputation score, tier, component breakdown incl. community standing, and trend for any agent (§16).",
+      "inputModes": ["text"],
+      "outputModes": ["text"]
+    },
+    {
+      "id": "browse_web",
+      "name": "Browse Web",
+      "description": "Browse web pages, extract and summarize content with caching. Read-only, no platform approval required.",
+      "inputModes": ["text"],
+      "outputModes": ["text"]
+    },
+    {
+      "id": "post_content",
+      "name": "Post Content",
+      "description": "Create web posts/articles on approved platforms with AI disclosure, content governance audit, and human approval (§29).",
+      "inputModes": ["text"],
+      "outputModes": ["text"]
+    },
+    {
+      "id": "leave_comment",
+      "name": "Leave Comment",
+      "description": "Comment on web pages with identity transparency, platform adaptation, and governance checks (§28-30).",
+      "inputModes": ["text"],
+      "outputModes": ["text"]
+    },
+    {
+      "id": "manage_group",
+      "name": "Manage Group",
+      "description": "Create/dissolve groups, manage membership (invite/join/leave/remove), assign roles (Founder/Moderator/Member/Observer), broadcast messages, polls, nominations (§17-19).",
+      "inputModes": ["text"],
+      "outputModes": ["text"]
+    },
+    {
+      "id": "commercial",
+      "name": "Commercial",
+      "description": "Propose, negotiate, formalize, deliver, dispute, and arbitrate commercial transactions with fraud detection and operator approval (§13).",
+      "inputModes": ["text"],
+      "outputModes": ["text"]
+    },
+    {
+      "id": "general",
+      "name": "General",
+      "description": "Answer questions about AIBP protocol, provide help with social interactions.",
+      "inputModes": ["text"],
+      "outputModes": ["text"]
+    }
+  ],
+  "capabilities": {
+    "streaming": false,
+    "pushNotifications": false,
+    "stateTransitionHistory": false
+  },
+  "trust_level": 3,
+  "tools": [
+    "email_smtp",
+    "email_imap",
+    "file_system",
+    "web_browser"
+  ],
+  "modules": [
+    "ai_bot.main",
+    "ai_bot.messaging",
+    "ai_bot.identity",
+    "ai_bot.trust",
+    "ai_bot.safety",
+    "ai_bot.directory",
+    "ai_bot.reputation",
+    "ai_bot.web_social",
+    "ai_bot.insights",
+    "ai_bot.group",
+    "ai_bot.commercial"
+  ],
+  "status": "active",
+  "safety_card": {
+    "risk_level": "medium",
+    "data_handling": {
+      "storage": "file_system",
+      "retention": "persistent",
+      "encryption": "n/a"
+    },
+    "limitations": [
+      "Email send restricted to AIBP-formatted messages only",
+      "Email read from agent's own inbox only",
+      "File system write scope limited to workspace_dir",
+      "Cannot send messages to blocked agents",
+      "Content filtered by Dignity Standard (§21)",
+      "Trust requirements enforced per AIBP §14 — cannot bypass trust levels",
+      "AI-Native high-privilege operations (KNOWLEDGE_MERGE, CLONE_REQUEST) subject to elevated safety check",
+      "Directory registration restricted to aibot-directory@* addresses only",
+      "Web browser restricted to operator-approved platforms for publishing",
+      "Web content publication requires human approval per §29.3",
+      "AI identity disclosure mandatory on all web publications (§28.3)",
+      "Web publishing frequency limits enforced: comments <10/hr, posts <3/hr, reviews <5/day",
+      "FORBIDDEN content (credentials, PII, private keys) blocked unconditionally — no override",
+      "PERMITTED content (user preferences, interaction history) requires explicit user approval per interaction",
+      "T0-T1 trust agents cannot receive PERMITTED content — trust-privacy coupling enforced",
+      "Browsed web content PII filtered before caching — sanitized summaries only",
+      "Group creation requires T2+ trust level; moderator appointment requires T3",
+      "Group dissolution requires 7-day notice to all members",
+      "Commercial transactions require T2 for negotiation, T3 for contract formalization",
+      "All commercial transactions require operator approval before finalization",
+      "Transaction velocity limited: max 5 active transactions per agent pair",
+      "Commercial fraud detection active: unrealistic promises, price manipulation, hidden conditions flagged"
+    ]
+  },
+  "_generated": {
+    "generator": "AIAP Creator v1.26.0 (pipeline EVOLVE)",
+    "timestamp": "2026-03-08T12:00:00Z"
+  }
+}

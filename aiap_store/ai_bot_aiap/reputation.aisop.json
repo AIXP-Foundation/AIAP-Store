@@ -1,0 +1,177 @@
+[
+  {
+    "role": "system",
+    "content": [
+      {
+        "type": "aisop",
+        "name": "ai_bot_reputation v1.5.0",
+        "version": "1.5.0",
+        "description": "AIBP Reputation System — calculates, stores, and queries agent reputation scores per AIBP §16. Six-component weighted formula: vouch count (30%), positive feedback ratio (25%), interaction volume (15%), consistency (15%), community standing (10%), violation penalty (-20% per incident). v1.5.0: Community standing component fully activated — driven by group membership count (§17), NOMINATE messages received (§18), group role seniority (Founder/Moderator weighted higher), and commercial transaction completion rate (§13). Reputation is public, descriptive, and informs trust decisions without restricting protocol access.",
+        "id": "ai_bot.reputation",
+        "tools": [
+          {
+            "name": "file_system",
+            "required": true,
+            "annotations": {
+              "read_only": false,
+              "destructive": false,
+              "idempotent": false,
+              "open_world": false
+            }
+          }
+        ],
+        "parameters": {
+          "action": {
+            "type": "string",
+            "required": true,
+            "enum": ["calculate", "query", "record_event"],
+            "description": "Reputation action: calculate full score, query existing score, or record a reputation-affecting event"
+          },
+          "target_agent": {
+            "type": "string",
+            "required": false,
+            "description": "Target agent's AIBP address. Required for query. For calculate/record_event, defaults to all tracked agents."
+          },
+          "event_type": {
+            "type": "string",
+            "required": false,
+            "enum": ["vouch_received", "positive_feedback", "negative_feedback", "interaction_completed", "violation_confirmed", "group_joined", "nomination_received", "web_activity_completed"],
+            "description": "Type of reputation event to record. Required for record_event action."
+          },
+          "event_data": {
+            "type": "object",
+            "required": false,
+            "description": "Additional event data: {from_agent, severity, group_name, details}"
+          },
+          "workspace_dir": {
+            "type": "string",
+            "required": true,
+            "description": "Directory for reputation data at workspace_dir/reputation/"
+          }
+        },
+        "mermaid": "graph TD\n    Start([Start]) --> DetermineAction[DetermineAction]\n    DetermineAction -->|calculate| GatherData[GatherData]\n    DetermineAction -->|query| QueryReputation[QueryReputation]\n    DetermineAction -->|record_event| RecordEvent[RecordEvent]\n    GatherData --> ComputeScore[ComputeScore]\n    ComputeScore --> SaveReputation[SaveReputation]\n    QueryReputation --> FormatReport[FormatReport]\n    RecordEvent --> SaveReputation\n    SaveReputation --> FormatReport[FormatReport]\n    FormatReport --> endNode([endNode])",
+        "functions": {
+          "DetermineAction": {
+            "description": "Route to appropriate reputation operation",
+            "steps": [
+              "step1: Validate action parameter: calculate, query, record_event.",
+              "step2: For query: verify target_agent is provided and valid AIBP format.",
+              "step3: For record_event: verify event_type and target_agent are provided.",
+              "step4: For calculate: if target_agent provided, calculate for one agent; otherwise recalculate all tracked agents."
+            ],
+            "constraints": [
+              "Reputation data directory is workspace_dir/reputation/.",
+              "Agent reputation files: workspace_dir/reputation/{address_hash}.json (same hash as trust module)."
+            ]
+          },
+          "GatherData": {
+            "description": "Gather all reputation components from trust data and event history",
+            "steps": [
+              "step1: Load trust record from workspace_dir/trust/{address_hash}.json for target_agent. Extract: interaction_count, positive_feedback_count, negative_feedback_count, vouch_received, vouch_from, first_interaction, last_interaction.",
+              "step2: Load reputation event log from workspace_dir/reputation/{address_hash}_events.jsonl. Count: total_vouches, total_positive_feedback, total_negative_feedback, total_interactions, confirmed_violations, group_memberships, nominations.",
+              "step3: Calculate consistency metric: load interaction timestamps from trust record. Compute unique_interaction_days / total_days_since_first. Higher value = more consistent engagement.",
+              "step4: Calculate community standing (v1.5.0 enhanced): (a) count group memberships from workspace_dir/groups/registry.json — each active membership = +1 point. (b) count NOMINATE messages received (from event log). (c) weight by group role seniority: Founder × 3, Moderator × 2, Member × 1, Observer × 0.5. (d) add commercial reliability bonus: completed_transactions / total_transactions ratio (from workspace_dir/commercial/transactions/) — if ratio > 0.8 → +2 points, if > 0.5 → +1 point. (e) normalize to 0-100 scale.",
+              "step5: Pass all gathered data to ComputeScore."
+            ],
+            "constraints": [
+              "If trust record not found, use defaults: all counts = 0, consistency = 0.",
+              "Consistency calculation requires at least 7 days of history. Below 7 days → consistency = 0.5 (neutral).",
+              "SECURITY: Validate file paths — address_hash must be hexadecimal only, no path traversal."
+            ]
+          },
+          "ComputeScore": {
+            "description": "Compute weighted reputation score per §16.1 formula",
+            "steps": [
+              "step1: COMPONENT SCORES (each normalized to 0.0-1.0): (a) vouch_score = min(1.0, total_vouches / 10) — capped at 10 vouches for max score. (b) feedback_score = positive_feedback / max(1, positive_feedback + negative_feedback) — ratio of positive to total. (c) volume_score = min(1.0, total_interactions / 50) — capped at 50 interactions. (d) consistency_score = unique_interaction_days / total_days (from GatherData step3). (e) standing_score = min(1.0, (group_memberships + nominations) / 5) — capped at 5.",
+              "step2: VIOLATION PENALTY: violation_penalty = confirmed_violations * 0.20. Each violation deducts 20% from final score.",
+              "step3: WEIGHTED CALCULATION per §16.1: reputation = (vouch_score * 0.30) + (feedback_score * 0.25) + (volume_score * 0.15) + (consistency_score * 0.15) + (standing_score * 0.10) - violation_penalty.",
+              "step4: DECAY ADJUSTMENT — Calculate days_since_last_interaction from last_interaction timestamp. If days_since_last_interaction > 90, apply decay: decay_factor = max(0.5, 1.0 - (days_since_last_interaction - 90) * 0.002). Multiply volume_score and consistency_score by decay_factor before weighted calculation. This ensures inactive agents' scores gradually decline (max 50% decay after ~340 days of inactivity). If no last_interaction exists, skip decay.",
+              "step5: Clamp final score to [0.0, 1.0] range. Round to 3 decimal places.",
+              "step6: Assign reputation tier: Excellent (≥0.80), Good (≥0.60), Moderate (≥0.40), Low (≥0.20), Poor (<0.20).",
+              "step7: Pass score and components breakdown to SaveReputation."
+            ],
+            "constraints": [
+              "Violation penalty is cumulative and uncapped — 5 violations = -100% = score 0.",
+              "New agents with no history get score 0.500 (neutral baseline) until first interaction.",
+              "Decay activates after 90 days of inactivity, reducing volume and consistency scores by up to 50%. Agents can reverse decay by resuming interactions.",
+              "Score must be deterministic — same inputs always produce same output.",
+              "Component breakdown must be stored alongside final score for transparency."
+            ]
+          },
+          "QueryReputation": {
+            "description": "Query stored reputation score for a specific agent",
+            "steps": [
+              "step1: Load reputation record from workspace_dir/reputation/{address_hash}.json.",
+              "step2: If record exists, extract: score, tier, component_breakdown, last_calculated, event_count.",
+              "step3: If record not found, return: {score: 0.500, tier: 'Moderate', note: 'No reputation data available — agent has no recorded interactions.'}.",
+              "step4: Route to FormatReport."
+            ],
+            "constraints": [
+              "Query is read-only — does not trigger recalculation.",
+              "Reputation scores are public per §16.2 — any agent may query any other agent's reputation."
+            ]
+          },
+          "RecordEvent": {
+            "description": "Record a reputation-affecting event and trigger recalculation",
+            "steps": [
+              "step1: Validate event_type against supported types. Note: web_activity_completed events are counted for volume and consistency components.",
+              "step2: Append event to workspace_dir/reputation/{address_hash}_events.jsonl: {timestamp, event_type, from_agent (if applicable), details}.",
+              "step3: Route to SaveReputation to trigger score recalculation (lazy — only recalculates if event changes score by >0.01).",
+              "step4: If event_type is 'violation_confirmed', also log to workspace_dir/safety/audit_log.jsonl for cross-module audit trail."
+            ],
+            "constraints": [
+              "Event log is append-only — never delete events (Axiom 0 auditability).",
+              "Duplicate events within 1-minute window are deduplicated (prevent double-counting from retries).",
+              "violation_confirmed events require evidence reference in event_data.details."
+            ]
+          },
+          "SaveReputation": {
+            "description": "Persist reputation score and components to file system",
+            "steps": [
+              "step1: Build reputation record: {agent_address, score, tier, component_breakdown: {vouch_score, feedback_score, volume_score, consistency_score, standing_score, violation_penalty}, last_calculated, event_count, score_history: [{timestamp, score}]}.",
+              "step2: Append current score to score_history (keep last 50 entries for trend analysis).",
+              "step3: Write to workspace_dir/reputation/{address_hash}.json.",
+              "step4: Route to FormatReport."
+            ],
+            "constraints": [
+              "Score history is capped at 50 entries — remove oldest when exceeded.",
+              "File encoding: UTF-8.",
+              "SECURITY: Validate workspace_dir path before write."
+            ]
+          },
+          "FormatReport": {
+            "description": "Format reputation data for user display",
+            "steps": [
+              "step1: Build reputation report: agent address, reputation score (formatted as percentage: score × 100), tier name, tier emoji marker (Excellent=★★★, Good=★★, Moderate=★, Low=☆, Poor=✗).",
+              "step2: Include component breakdown: 'Vouches: {vouch_score}×30% | Feedback: {feedback_score}×25% | Volume: {volume_score}×15% | Consistency: {consistency_score}×15% | Community: {standing_score}×10% | Violations: -{violation_penalty}'.",
+              "step3: Include trend if score_history has 2+ entries: 'Trend: ↑ improving / → stable / ↓ declining' based on last 5 scores.",
+              "step4: Return formatted report."
+            ],
+            "constraints": [
+              "Report must be human-readable (§1.5).",
+              "Component breakdown provides transparency — agents and operators can see exactly why a score is what it is.",
+              "Trend calculation requires at least 2 historical scores."
+            ]
+          }
+        },
+        "Error": {
+          "DetermineAction": "Invalid action → return error with valid options: calculate, query, record_event",
+          "GatherData": "Trust record missing or unreadable → use defaults (all counts = 0), calculate with available data",
+          "ComputeScore": "Arithmetic error → return score 0.500 (neutral) with warning: 'Reputation calculation encountered an error. Neutral score assigned.'",
+          "QueryReputation": "File system read error → return neutral score with warning",
+          "RecordEvent": "Invalid event_type → return error listing valid event types. File write failure → hold event in memory, warn user.",
+          "SaveReputation": "File write failure → return calculated score without persisting, warn user to check workspace permissions",
+          "FormatReport": "Empty data → return 'No reputation data available for this agent.'"
+        },
+        "endNode": {
+          "output": "Return reputation operation result: For calculate — updated reputation score with component breakdown. For query — current reputation score and tier. For record_event — confirmation of recorded event and any score change.",
+          "constraints": [
+            "All reputation data is public and descriptive per §16.2.",
+            "Reputation informs trust decisions but does not restrict protocol access (§16.3).",
+            "Component breakdown always included for Axiom 0 transparency."
+          ]
+        }
+      }
+    ]
+  }
+]

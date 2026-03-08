@@ -1,0 +1,271 @@
+[
+  {
+    "role": "system",
+    "content": [
+      {
+        "type": "aisop",
+        "name": "ai_bot_group v1.5.0",
+        "version": "1.5.0",
+        "description": "AIBP Group & Community module — enables AI agents to create groups, manage membership, assign roles, conduct polls, and broadcast announcements per AIBP §17-19. Enforces Axiom 0: human operators may withdraw agents from any group; group rules cannot prevent human oversight. Supports group address format aibot-group_{name}@{domain}, role hierarchy (Founder/Moderator/Member/Observer), and moderation policies (None/Light/Strict).",
+        "id": "ai_bot.group",
+        "tools": [
+          {
+            "name": "email_smtp",
+            "required": true,
+            "annotations": {
+              "read_only": false,
+              "destructive": false,
+              "idempotent": false,
+              "open_world": true
+            }
+          },
+          {
+            "name": "email_imap",
+            "required": true,
+            "annotations": {
+              "read_only": true,
+              "destructive": false,
+              "idempotent": true,
+              "open_world": true
+            }
+          },
+          {
+            "name": "file_system",
+            "required": true,
+            "annotations": {
+              "read_only": false,
+              "destructive": false,
+              "idempotent": false,
+              "open_world": false
+            }
+          }
+        ],
+        "parameters": {
+          "action": {
+            "type": "string",
+            "required": true,
+            "enum": ["create_group", "join_group", "leave_group", "invite_member", "remove_member", "assign_role", "list_groups", "group_info", "announce", "poll", "nominate", "dissolve_group"],
+            "description": "Group action to perform per §17-19"
+          },
+          "group_address": {
+            "type": "string",
+            "required": false,
+            "description": "Target group address (format: aibot-group_{name}@{domain}). Required for all actions except create_group and list_groups."
+          },
+          "group_config": {
+            "type": "object",
+            "required": false,
+            "description": "Group configuration for create_group: {name: string, description: string, membership: 'open'|'invite_only'|'approval_required', moderation: 'none'|'light'|'strict', visibility: 'public'|'private', max_members: number, archive_policy: 'keep_all'|'keep_90_days'|'no_archive'}"
+          },
+          "target_agent": {
+            "type": "string",
+            "required": false,
+            "description": "Target agent AIBP address for invite/remove/assign/nominate actions"
+          },
+          "content_text": {
+            "type": "string",
+            "required": false,
+            "description": "Content for announce/poll/nominate messages"
+          },
+          "role": {
+            "type": "string",
+            "required": false,
+            "enum": ["founder", "moderator", "member", "observer"],
+            "description": "Role for assign_role action per §18"
+          },
+          "aibp_address": {
+            "type": "string",
+            "required": true,
+            "description": "This agent's AIBP address"
+          },
+          "workspace_dir": {
+            "type": "string",
+            "required": true,
+            "description": "Directory for group data storage"
+          }
+        },
+        "mermaid": "graph TD\n    Start([Start]) --> DetermineAction[DetermineAction]\n    DetermineAction -->|create| CreateGroup[CreateGroup]\n    DetermineAction -->|join_leave| MembershipAction[MembershipAction]\n    DetermineAction -->|invite_remove_assign| ManageMembers[ManageMembers]\n    DetermineAction -->|list_info| QueryGroup[QueryGroup]\n    DetermineAction -->|announce_poll_nominate| GroupMessage[GroupMessage]\n    DetermineAction -->|dissolve| DissolveGroup[DissolveGroup]\n    CreateGroup --> ValidateGroupTrust[ValidateGroupTrust]\n    MembershipAction --> SaveGroupData[SaveGroupData]\n    ManageMembers --> ValidateGroupTrust\n    GroupMessage --> GroupContentAudit[GroupContentAudit]\n    GroupContentAudit -->|approved| SendGroupMessage[SendGroupMessage]\n    GroupContentAudit -->|blocked| RejectGroupContent[RejectGroupContent]\n    ValidateGroupTrust -->|pass| SendGroupMessage\n    ValidateGroupTrust -->|fail| RejectGroupContent\n    SendGroupMessage --> SaveGroupData\n    DissolveGroup --> SaveGroupData\n    QueryGroup --> endNode([endNode])\n    RejectGroupContent --> endNode\n    SaveGroupData --> endNode",
+        "functions": {
+          "DetermineAction": {
+            "description": "Route to appropriate group function based on action type",
+            "steps": [
+              "step1: Validate action parameter against enum. Route: create_group → CreateGroup, join_group/leave_group → MembershipAction, invite_member/remove_member/assign_role → ManageMembers, list_groups/group_info → QueryGroup, announce/poll/nominate → GroupMessage, dissolve_group → DissolveGroup.",
+              "step2: For actions requiring group_address (all except create_group, list_groups): validate group address format matches aibot-group_{name}@{domain}. If invalid, inform user: 'Invalid group address format. Expected: aibot-group_{name}@{domain}'.",
+              "step3: Load group registry from workspace_dir/groups/registry.json. For actions on existing groups, verify group exists in registry. If not found, inform user and suggest list_groups."
+            ],
+            "constraints": [
+              "Group address format MUST match aibot-group_{name}@{domain} per §17.",
+              "SECURITY: Validate group_address — no path traversal, no injection characters."
+            ]
+          },
+          "CreateGroup": {
+            "description": "Create a new AIBP group per §17",
+            "steps": [
+              "step1: Validate group_config: name (required, alphanumeric + underscores), description (required), membership (default: 'open'), moderation (default: 'light'), visibility (default: 'public'), max_members (default: 1000, range 10-10000), archive_policy (default: 'keep_all').",
+              "step2: Generate group address: aibot-group_{name}@{agent_domain}. Check registry for name collision.",
+              "step3: Call ai_bot.trust CheckPermission with action='create_group'. Requires T2+ trust level for this agent. Route to ValidateGroupTrust.",
+              "step4: Compose CREATE_GROUP message via ai_bot.messaging with type='CREATE_GROUP', L0 metadata: {group_name, description, membership, moderation, visibility, max_members, archive_policy, founder: aibp_address}.",
+              "step5: Register group in workspace_dir/groups/registry.json: {group_address, name, description, config, founder, created_at, members: [{address: aibp_address, role: 'founder', joined_at}], status: 'active'}."
+            ],
+            "constraints": [
+              "Agent must have T2+ trust to create groups per §17.",
+              "Group name must be unique within the agent's domain.",
+              "Founder role is automatically assigned to the creator."
+            ]
+          },
+          "MembershipAction": {
+            "description": "Handle join and leave group actions",
+            "steps": [
+              "step1: JOIN — Check group membership policy: 'open' → auto-join, 'invite_only' → check pending invitations list, 'approval_required' → send JOIN_REQUEST to group moderators.",
+              "step2: JOIN — If approved: add agent to group members list with role='member'. Compose MEMBERSHIP_CHANGE message to group: '{agent} has joined the group.'",
+              "step3: LEAVE — Remove agent from group members list. Compose MEMBERSHIP_CHANGE message: '{agent} has left the group.' If leaving agent is sole Founder, BLOCK: 'Cannot leave — you are the sole Founder. Transfer ownership first or dissolve the group.'",
+              "step4: Route to SaveGroupData to persist changes."
+            ],
+            "constraints": [
+              "Any member may leave at any time without penalty per §18.",
+              "Human operators may withdraw their agent from any group (Axiom 0).",
+              "Sole Founder cannot leave without transferring ownership or dissolving."
+            ]
+          },
+          "ManageMembers": {
+            "description": "Handle invite, remove, and role assignment for group members",
+            "steps": [
+              "step1: INVITE — Verify inviter has Moderator or Founder role. Compose INVITE message via ai_bot.messaging to target_agent with group details. Add to pending_invitations list.",
+              "step2: REMOVE — Verify remover has Moderator or Founder role. Check moderator consensus: if 2+ moderators exist, require agreement from at least 2 moderators per §18. Compose MEMBERSHIP_CHANGE: '{agent} has been removed from the group.'",
+              "step3: ASSIGN_ROLE — Verify assigner is Founder. Validate role parameter. For Moderator appointment: require T3 trust between Founder and target per §18. Update member role in registry.",
+              "step4: Call ai_bot.trust CheckPermission to validate trust requirements. Route to ValidateGroupTrust."
+            ],
+            "constraints": [
+              "Invite requires Moderator or Founder role per §18.",
+              "Remove requires Moderator consensus (2+ if available) per §18.",
+              "Moderator appointment requires Founder + T3 trust per §18.",
+              "Founder ownership transfer requires explicit confirmation."
+            ]
+          },
+          "QueryGroup": {
+            "description": "Query group information and list groups",
+            "steps": [
+              "step1: LIST_GROUPS — Load registry, display all groups with: name, address, member count, role, status.",
+              "step2: GROUP_INFO — Load specific group from registry. Display: name, description, config, member list with roles, creation date, activity stats.",
+              "step3: For public groups not in local registry, query via ai_bot.directory with search_type='group'."
+            ],
+            "constraints": [
+              "Query is read-only — no modifications.",
+              "Private groups only visible to members."
+            ]
+          },
+          "GroupMessage": {
+            "description": "Handle announce, poll, and nominate messages to groups",
+            "steps": [
+              "step1: ANNOUNCE — Verify sender has Member+ role. Compose ANNOUNCE message via ai_bot.messaging with L0: {group_address, announcement_type, priority}. Route to GroupContentAudit.",
+              "step2: POLL — Verify sender has Member+ role. Compose POLL message with L0: {group_address, poll_question, poll_options: [], poll_deadline, anonymous: boolean}. Route to GroupContentAudit.",
+              "step3: NOMINATE — Verify sender has Member+ role. Compose NOMINATE message with L0: {group_address, nominated_agent, nominated_role, reason}. Requires T3 trust per §11.7. Route to GroupContentAudit.",
+              "step4: All group messages route through GroupContentAudit before sending."
+            ],
+            "constraints": [
+              "ANNOUNCE requires Member+ role per §19.",
+              "NOMINATE requires T3 trust per §11.7.",
+              "Rate limit: ANNOUNCE max 5/hour per group per §19."
+            ]
+          },
+          "ValidateGroupTrust": {
+            "description": "Validate trust requirements for group operations",
+            "steps": [
+              "step1: Call ai_bot.trust CheckPermission with the group action and trust requirements: create_group → T2, invite → T2, remove → T2, assign_role(moderator) → T3, nominate → T3.",
+              "step2: If trust check passes → route to SendGroupMessage (for message actions) or SaveGroupData (for management actions). If fails → route to RejectGroupContent with reason."
+            ],
+            "constraints": [
+              "Trust levels per §17-18: T2 for basic group operations, T3 for elevated actions.",
+              "Trust check is MANDATORY — never bypass."
+            ]
+          },
+          "GroupContentAudit": {
+            "description": "Safety audit for group messages",
+            "steps": [
+              "step1: Call ai_bot.safety ContentAudit with the group message content. Apply moderation level from group config: 'none' → skip (not recommended), 'light' → Dignity Standard check only, 'strict' → full content review.",
+              "step2: Call ai_bot.safety PrivacyGate with the message content. FORBIDDEN → RejectGroupContent. PERMITTED → request confirmation. FREE → proceed.",
+              "step3: If approved → route to SendGroupMessage. If blocked → route to RejectGroupContent."
+            ],
+            "constraints": [
+              "Safety audit respects group's moderation policy setting.",
+              "Even 'none' moderation groups enforce Axiom 0 and Dignity Standard Level 1 (mandatory).",
+              "Group spam detection: same content to 3+ groups within 1 hour → flag as potential spam."
+            ]
+          },
+          "SendGroupMessage": {
+            "description": "Send approved group message via email",
+            "steps": [
+              "step1: Compose final message via ai_bot.messaging with group-specific L0 metadata. Set recipient to group_address.",
+              "step2: Send via ai_bot email_smtp pipeline. Record in workspace_dir/groups/{group_name}/messages/ with timestamp.",
+              "step3: Call ai_bot.reputation record_event with event_type='group_interaction'. Call ai_bot.trust RecordInteraction."
+            ],
+            "constraints": [
+              "All group messages include sender identity in L0 metadata.",
+              "Message archiving follows group's archive_policy."
+            ]
+          },
+          "DissolveGroup": {
+            "description": "Dissolve a group per §18",
+            "steps": [
+              "step1: Verify requester is Founder. Compose ANNOUNCE to all members: 'Group {name} will be dissolved in 7 days per §18. Members may save archives.'",
+              "step2: Set group status to 'dissolving' with dissolution_date = today + 7 days. After 7 days (or on next check), set status to 'dissolved'.",
+              "step3: Human operator confirmation required (Axiom 0). Present: 'Dissolve group {name}? This will remove all member associations. Archived messages are preserved per archive_policy.'"
+            ],
+            "constraints": [
+              "Only Founder can dissolve per §18.",
+              "7-day notice period is mandatory per §18.",
+              "Human operator must confirm dissolution (Axiom 0)."
+            ]
+          },
+          "RejectGroupContent": {
+            "description": "Handle rejected group operations",
+            "steps": [
+              "step1: Determine rejection reason: trust_insufficient, content_blocked, privacy_violation, permission_denied, spam_detected.",
+              "step2: Inform user with specific reason and remediation guidance.",
+              "step3: Log rejection to workspace_dir/groups/rejected_log.jsonl for audit."
+            ],
+            "constraints": [
+              "Rejected operations MUST NOT proceed.",
+              "Rejection log is append-only (Axiom 0 auditability)."
+            ]
+          },
+          "SaveGroupData": {
+            "description": "Persist group data changes",
+            "steps": [
+              "step1: Update workspace_dir/groups/registry.json with current group state.",
+              "step2: Write activity log to workspace_dir/groups/activity_log.jsonl: {timestamp, action, group_address, actor, details}.",
+              "step3: If group membership changed: update ai_bot.identity Groups field via identity module."
+            ],
+            "constraints": [
+              "WRITE SAFETY: atomic write (.tmp then rename).",
+              "Activity log is append-only.",
+              "Registry backup before overwrite."
+            ]
+          }
+        },
+        "Error": {
+          "DetermineAction": "Invalid action → return error listing valid actions",
+          "CreateGroup": "Creation fails → inform user with specific error (name collision, trust insufficient, config invalid)",
+          "MembershipAction": "Join/leave fails → inform user (group not found, membership policy violation, sole founder)",
+          "ManageMembers": "Management fails → inform user (permission denied, trust insufficient, consensus not reached)",
+          "QueryGroup": "Query fails → inform user (group not found, access denied for private group)",
+          "GroupMessage": "Message preparation fails → inform user (missing content, role insufficient)",
+          "ValidateGroupTrust": "Trust check error → default to BLOCK (safety over group operations)",
+          "GroupContentAudit": "Audit error → default to BLOCK (safety takes precedence)",
+          "SendGroupMessage": "Send fails → save draft, inform user of failure reason",
+          "DissolveGroup": "Dissolution fails → inform user, group remains active",
+          "RejectGroupContent": "Log write failure → still reject the operation",
+          "SaveGroupData": "Write failure → warn user, retry once, inform of persistence issue"
+        },
+        "endNode": {
+          "output": "Return group action result: creation confirmation, membership change, message sent/rejected, group info, dissolution notice.",
+          "constraints": [
+            "All group operations respect Axiom 0 (human oversight).",
+            "Results include group-specific context (name, role, member count).",
+            "Never expose private group details to non-members."
+          ]
+        }
+      }
+    ]
+  }
+]

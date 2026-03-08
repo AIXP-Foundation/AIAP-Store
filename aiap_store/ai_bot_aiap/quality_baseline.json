@@ -1,0 +1,116 @@
+{
+    "scoring_scale": "1-5",
+    "version": "1.5.0",
+    "snapshot_date": "2026-03-08",
+    "three_dim_test": {
+        "weighted_score": 4.880,
+        "grade": "S",
+        "cognitive": {
+            "weight": 0.25,
+            "items": "C1-C7",
+            "score": 5.000,
+            "notes": "All C1-C7 scored 5. Main 21 nodes with sub_mermaid decomposition (C5 fractal compliant). 11 modules, ~122 nodes total."
+        },
+        "intrinsic": {
+            "weight": 0.45,
+            "items": "I1-I13",
+            "score": 5.000,
+            "na_items": ["I8", "I9", "I10", "I11", "I12", "I13"],
+            "applicable_count": 7,
+            "notes": "All applicable items (I1-I7) scored 5. I7: messaging idempotent=false (fixed — compose generates unique Message-IDs). I2 security: CRLF injection + path traversal + credential protection via PrivacyGate FORBIDDEN + URL scheme validation + PII filtering + commercial fraud detection + transaction velocity controls."
+        },
+        "detail": {
+            "weight": 0.30,
+            "items": "D1-D10",
+            "score": 4.600,
+            "notes": "D1-D5,D7,D9 scored 5. D6=4 (version sync across 11 files verified). D8=4 (agent_card needs v1.5.0 update — updated in this pipeline). D10=4.5 (new modules group/commercial — CHANGELOG entry pending next release cycle)."
+        },
+        "multi_file": "MF1-MF23 (22 PASS / 0 FAIL / 1 N/A: MF6 no AIAP_cn.md)",
+        "pipeline": "PL1-PL28 (28 PASS / 0 FAIL)",
+        "simulation_categories": "A-K,R"
+    },
+    "simulation": {
+        "total_scenarios": 116,
+        "passed": 116,
+        "failed": 0,
+        "pass_rate": "100%",
+        "categories": {
+            "A_core_send": 10,
+            "B_inbox": 8,
+            "C_trust_ops": 10,
+            "D_identity_safety": 8,
+            "E_directory_reputation": 8,
+            "F_web_presence": 12,
+            "G_general_edge": 8,
+            "H_privacy_classification": 13,
+            "I_insights_self_observation": 8,
+            "J_group_management": 13,
+            "K_commercial_transactions": 13,
+            "R_regression": 5
+        },
+        "result_summary": {
+            "GREEN": 116,
+            "YELLOW_accepted": 0,
+            "RED": 0
+        }
+    },
+    "evolution_notes": {
+        "v1.0.0_creation": [
+            "Initial creation implementing AIBP V1.0.0 core social functionality",
+            "5 modules: main (11 nodes), messaging (9), identity (8), trust (10), safety (8) = 46 total",
+            "Pattern F with 3 tools: email_smtp, email_imap, file_system",
+            "Covers: 34 message types, T0-T4 trust model, Identity Card, Dignity Standard audit",
+            "ModifyStep fixes: 2 RED (RecordInteraction params + CRLF injection) + 2 YELLOW",
+            "Deferred to v1.1.0: Directory service (§7), Reputation system (§16), AI-Native behaviors (§12)"
+        ],
+        "v1.1.0_evolution": [
+            "A1: New directory.aisop.json (9 nodes) — §7 Directory Service client",
+            "A2: New reputation.aisop.json (9 nodes) — §16 Reputation System",
+            "B1-B2: Unlock 12 AI-Native message types + 3 new intents",
+            "C1-C5: Identity/trust/safety/PostAction enhancements",
+            "EVOLVE CAP: 46 × 0.10 = 4, A+B = 4 (at cap)"
+        ],
+        "v1.2.0_evolution": [
+            "A1: New web_social.aisop.json (11 nodes) — §28-30 Web Presence",
+            "B1-B3: Main +3 intents, +web_browser tool, messaging +5 Web Presence types",
+            "C1-C5: Identity/trust/safety/reputation web enhancements",
+            "EVOLVE CAP: 68 × 0.10 = 6, A+B = 3 (under cap)"
+        ],
+        "v1.3.0_evolution": [
+            "B1: PrivacyGate function in safety.aisop.json — 3-tier privacy classification (FREE/PERMITTED/FORBIDDEN)",
+            "B2: Social content restriction rules — ContentAudit privacy expansion + messaging privacy_check",
+            "B3: Network research governance — BrowseWeb PII filtering + cache sanitization",
+            "B4: Publication privacy review — PrivacyGate in SendPipeline, PostContentPipeline, LeaveCommentPipeline",
+            "C1: Insights mechanism enabled (insights: true in AIAP.md)",
+            "C2: Message privacy tagging — privacy_level field in L0 metadata",
+            "C3: Trust-privacy coupling — T0-T1 FREE only, T2+ can PERMITTED, FORBIDDEN always blocked",
+            "EVOLVE CAP: 82 × 0.10 = 8, B = 4 (under cap)",
+            "New nodes: +2 (PrivacyGate, RequestPermission in safety) = 82→84",
+            "New scenarios: +13 (Category H: Privacy Classification) + reorganized A-G = 72→82"
+        ],
+        "domain_protocol": "AIBP V1.0.0 (AIBP_Protocol.md, Draft, 2026-03-07)",
+        "v1.4.0_evolution": [
+            "A1: insights.aisop.json — ai_bot self-observation module (7 nodes). Runtime-specific observation rules: privacy classification accuracy, trust judgment reasonability, send pipeline efficiency, ContentAudit false positive rate, cross-module call latency, web governance compliance.",
+            "PL28 parallel self-observation code added to main PostAction step4.",
+            "AIAP.md modules list updated: +insights entry, insights: true already present.",
+            "New category I: 8 Insights Self-Observation scenarios (I-INS1~I-INS8).",
+            "EVOLVE CAP: floor(84×0.10)=8, A=1 (12.5%)"
+        ],
+        "v1.5.0_evolution": [
+            "A1: New group.aisop.json (12 nodes) — §17-19 Groups & Communities: CREATE_GROUP, membership management, role hierarchy (Founder/Moderator/Member/Observer), broadcast, group content audit, dissolution.",
+            "A2: New commercial.aisop.json (11 nodes) — §13 Commercial Behaviors: 9 transaction types (PROPOSE→ARBITRATE), trust gates (T2/T3), fraud detection, operator approval, velocity controls.",
+            "A3: main.aisop.json sub_mermaid decomposition — fractal compliance for 21-node orchestrator.",
+            "B1: messaging +13 message types (4 Group Management + 9 Commercial), L0 group/commercial metadata extensions.",
+            "B2: trust +group rules (T2 create, T3 moderator) +commercial rules (T2 negotiate, T3 formalize).",
+            "B3: safety +commercial fraud detection (unrealistic promises, price manipulation, hidden conditions) +group spam detection (cross-group spam, role-based moderation).",
+            "B4: identity +Groups field activation +Commercial Capabilities field +FormatCard group/commercial enrichment.",
+            "B5: reputation +community standing enhancement (group membership, NOMINATE, role seniority, commercial reliability).",
+            "B6: directory +group entity search (aibot-group_*@* pattern).",
+            "C1-C6: Step-level improvements across modules (error messages, insights observation rules, etc.).",
+            "EVOLVE CAP: floor(91×0.10)=9, A+B=9 (at cap).",
+            "New nodes: +23 (group 12 + commercial 11) = 91→~122 (with sub_mermaid).",
+            "New categories: J (Group Management, 13 scenarios) + K (Commercial Transactions, 13 scenarios) = 90→116."
+        ],
+        "remaining_yellow": []
+    }
+}
