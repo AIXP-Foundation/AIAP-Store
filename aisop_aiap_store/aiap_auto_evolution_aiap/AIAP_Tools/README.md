@@ -8,11 +8,11 @@ This directory contains nested AIAP programs used as tools by `aiap_auto_evoluti
 
 | Directory | Program | Version | Purpose |
 |-----------|---------|---------|---------|
-| `aiap_creator_evolution_aiap/` | AIAP Creator | v1.24.0 | Single-round AIAP evolution engine (full 15-stage pipeline) |
+| `aisop_creator_evolution_aiap/` | AIAP Creator | v1.24.0 | Single-round AIAP evolution engine (full 15-stage pipeline) |
 
 ## Interface
 
-### aiap_creator_evolution_aiap
+### aisop_creator_evolution_aiap
 
 - **Invocation**: Intent execution via `executor.aisop.json` IntentExecute node
 - **Input**: Natural language evolution instruction (classified by Creator's NLU as "Evolve" intent)
@@ -29,5 +29,5 @@ This directory contains nested AIAP programs used as tools by `aiap_auto_evoluti
 
 ## Maintenance
 
-- When upgrading Creator, replace the entire `aiap_creator_evolution_aiap/` directory with the new version.
+- When upgrading Creator, replace the entire `aisop_creator_evolution_aiap/` directory with the new version.
 - Verify Creator version compatibility with host program's `executor.aisop.json` PrepareContext step.

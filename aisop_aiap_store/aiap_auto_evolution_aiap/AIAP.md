@@ -5,14 +5,15 @@ protocol: "AIAP V1.0.0"
 authority: aiap.dev
 seed: aisop.dev
 executor: soulbot.dev
-axiom_0: Human_Sovereignty_and_Benefit
+axiom_0: Human_Sovereignty_and_Wellbeing
 governance_mode: NORMAL
 
-# Project Fields (7 required)
+# Project Fields (8 required)
 name: aiap_auto_evolution
-version: "1.0.0"
+version: "1.2.0"
 pattern: B+G
-summary: "AIAP Auto Evolution — automated multi-round AIAP evolution orchestrator. Receives user command (target program, round count, mode), plans evolution direction per round (web search + anti-over-engineering + human habit alignment), executes each round via nested Creator intent execution (AIAP_Tools), validates quality after each round. Supports AUTO/SEMI/SUPERVISED modes. Preserves successful rounds on failure. Pattern B+G, 4 modules, 40 nodes."
+flow_format: AISOP
+summary: "AIAP Auto Evolution — automated multi-round AIAP evolution orchestrator. Plans evolution direction per round (web search + anti-over-engineering + human habit), executes via nested Creator, validates quality. AUTO/SEMI/SUPERVISED modes. **v1.2.0**: protocol alignment (flow_format §3.1), AISIP/DUAL format detection, search query safety hardening (OWASP 2026), path traversal guard, file integrity verification. **v1.1.0**: quality baseline generation (MF17), cross-round trend analysis, provenance chain (SLSA), convergence detection, protocol alignment hardening. Pattern B+G, 4 modules, 44 nodes, Grade S."
 tools:
   - name: file_system
     required: true
@@ -40,36 +41,36 @@ tools:
 modules:
   - id: aiap_auto_evolution.main
     file: main.aisop.json
-    nodes: 19
+    nodes: 20
     critical: true
     idempotent: false
     side_effects: [file_write]
   - id: aiap_auto_evolution.planner
     file: planner.aisop.json
-    nodes: 8
+    nodes: 9
     critical: true
     idempotent: true
     side_effects: []
   - id: aiap_auto_evolution.executor
     file: executor.aisop.json
-    nodes: 5
+    nodes: 6
     critical: true
     idempotent: false
     side_effects: [file_write]
   - id: aiap_auto_evolution.validator
     file: validator.aisop.json
-    nodes: 8
+    nodes: 9
     critical: false
     idempotent: true
     side_effects: []
 
 # Optional Fields
-governance_hash: d303c822994402b2e47c04449d743b3553b4df3be6368c291c6fee04fe3371ba
+governance_hash: 3a47d28c43311fe9d1ea468dbea381cd9c3efb96590739cb540531d2e500c98d
 quality:
-  weighted_score: 4.697
+  weighted_score: 4.934
   grade: S
-  last_pipeline: "v1.0.0 CREATE: AIAP Auto Evolution — automated multi-round evolution orchestrator with AUTO/SEMI/SUPERVISED modes, anti-over-engineering guards, nested Creator intent execution via AIAP_Tools."
-tags: [aiap, auto-evolution, automation, batch-evolution, orchestrator]
+  last_pipeline: "v1.2.0 EVOLVE: PROTOCOL ALIGNMENT + AISIP SUPPORT + SEARCH SAFETY + PATH HARDENING: B1 flow_format §3.1 (14 frontmatter), B2 AISIP/DUAL format detection (planner+executor+validator), B3 search query safety hardening (OWASP 2026 multi-layer), B4 path traversal guard + file integrity verification. 4 modules, 44 nodes."
+tags: [aiap, auto-evolution, automation, batch-evolution, orchestrator, aisip-aware, dual-format, search-safety, protocol-alignment]
 author: SoulBot.dev
 license: Apache-2.0
 copyright: "Copyright 2026 AIXP Foundation AIXP.dev | SoulBot.dev"
@@ -105,7 +106,7 @@ capabilities:
   required:
     - file_read
 tool_dirs:
-  - path: "AIAP_Tools/aiap_creator_evolution_aiap"
+  - path: "AIAP_Tools/aisop_creator_evolution_aiap"
     type: "aiap_program"
     trust_level: "T4"
     description: "Nested AIAP Creator v1.24.0 for single-round evolution execution"
@@ -121,7 +122,7 @@ applicability_condition:
   preconditions:
     - "workspace_dir exists and is writable"
     - "file_system tool available"
-    - "AIAP_Tools/aiap_creator_evolution_aiap/ directory contains valid Creator"
+    - "AIAP_Tools/aisop_creator_evolution_aiap/ directory contains valid Creator"
   exclusions:
     - "single evolution (use Creator directly)"
     - "program creation from scratch (use Creator directly)"
@@ -141,7 +142,7 @@ min_protocol_version: "AIAP V1.0.0"
 
 ## Governance Statement
 
-AIAP Auto Evolution is an automated multi-round evolution orchestrator for AIAP programs. This program follows AIAP V1.0.0 protocol with Axiom 0 (Human Sovereignty and Benefit) as immutable axiom, ensuring all evolution decisions serve human intent.
+AIAP Auto Evolution is an automated multi-round evolution orchestrator for AIAP programs. This program follows AIAP V1.0.0 protocol with Axiom 0 (Human Sovereignty and Wellbeing) as immutable axiom, ensuring all evolution decisions serve human intent.
 
 ## Feature Overview
 
@@ -164,7 +165,7 @@ AIAP Auto Evolution is an automated multi-round evolution orchestrator for AIAP 
 
 | Tool | Version | Purpose |
 |------|---------|---------|
-| aiap_creator_evolution_aiap | v1.24.0 | Nested Creator for single-round evolution execution via intent execution |
+| aisop_creator_evolution_aiap | v1.24.0 | Nested Creator for single-round evolution execution via intent execution |
 
 ## Usage
 
@@ -183,7 +184,7 @@ AIAP Auto Evolution is an automated multi-round evolution orchestrator for AIAP 
 ### Prerequisites
 
 - workspace_dir containing target AIAP programs
-- AIAP_Tools/aiap_creator_evolution_aiap/ contains valid Creator v1.24.0
+- AIAP_Tools/aisop_creator_evolution_aiap/ contains valid Creator v1.24.0
 - file_system tool available with workspace_dir write access
 
 ## Example Interactions

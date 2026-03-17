@@ -1,0 +1,13 @@
+{
+    "schema_version": "1.0.0",
+    "registry_hash": null,
+    "built_timestamp": null,
+    "total_programs": 0,
+    "depth": 0,
+    "tree": {
+        "root": {
+            "label": "All AIAPs",
+            "children": []
+        }
+    }
+}

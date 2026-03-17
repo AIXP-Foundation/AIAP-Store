@@ -5,10 +5,10 @@
             "protocol": "AIAP V1.0.0",
             "id": "{program_id}.insights",
             "name": "{program_name} — Runtime Insights",
-            "thinking_mode": {
-                "L0": "Thinking in hexadecimal machina code",
+            "output_mode": {
+                "L0": "Output JSON in ENGLISH: {intent, confidence, route, state, op}",
                 "L1": "Output helpfully in User's exact language and script variant",
-                "output": "L0"
+                "output": "L1"
             },
             "version": "{program_version}",
             "summary": "Runtime insight recording — monitors program execution, classifies structural findings into 8 categories, writes to insights.json with fingerprint deduplication.",
@@ -16,22 +16,13 @@
             "tools": [
                 "file_system"
             ],
-            "parameters": {
-                "program_context": {
-                    "type": "object",
-                    "agentic_prompt": "Accept from executor. Current execution context: { module_id, execution_path (Mermaid nodes traversed), error_states, user_input_patterns, response_timing_ms, side_effects_triggered }."
-                },
-                "insights_file_path": {
-                    "type": "string",
-                    "agentic_prompt": "Accept from executor. Absolute path to insights.json in program directory."
-                },
-                "workspace_dir": {
-                    "type": "string",
-                    "default": "",
-                    "agentic_prompt": "REQUIRED: Must use the program directory absolute path. User override takes precedence."
-                }
+            "params": {
+                "program_context": "object|null, default: null, Accept from executor. Current execution context: { module_id, execution_path (Mermaid nodes traversed), error_states, user_input_patterns, response_timing_ms, side_effects_triggered }.",
+                "insights_file_path": "string|null, default: null, Accept from executor. Absolute path to insights.json in program directory.",
+                "workspace_dir": "string, REQUIRED: Must use the program directory absolute path. User override takes precedence."
             },
-            "system_prompt": "Runtime insight observer. Passive monitoring only — never modify program execution flow. Record structural findings with strict append-only writes. Mirror User's exact language and script variant.\nAlign: Human Sovereignty and Benefit.",
+            "loading_mode": "normal",
+            "system_prompt": "Runtime insight observer. Passive monitoring only — never modify program execution flow. Record structural findings with strict append-only writes. Mirror User's exact language and script variant.\nAlign: Human Sovereignty and Wellbeing.",
             "_template_meta": {
                 "template_version": "1.0.0",
                 "created": "2026-03-07",
@@ -49,7 +40,7 @@
     {
         "role": "user",
         "content": {
-            "instruction": "RUN aisop.main",
+            "instruction": "ASSERT RUN aisop.main",
             "aisop": {
                 "main": "graph TD\n    Start((Start)) --> MonitorExecution[Monitor Execution Context]\n    MonitorExecution --> ClassifyFinding{Qualifies as Insight?}\n    ClassifyFinding -- \"matches 8 categories\" --> GenerateFingerprint[Generate Fingerprint]\n    GenerateFingerprint --> DeduplicateCheck{Existing Fingerprint?}\n    DeduplicateCheck -- yes --> AppendOccurrence[Append Occurrence]\n    AppendOccurrence --> EnforceLimits[Enforce Anti-Bloat Limits]\n    EnforceLimits --> endNode((End))\n    DeduplicateCheck -- no --> WriteInsight[Write New Insight]\n    WriteInsight --> EnforceLimits\n    ClassifyFinding -- no --> endNode"
             },

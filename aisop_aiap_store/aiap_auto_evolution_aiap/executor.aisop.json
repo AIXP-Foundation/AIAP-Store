@@ -4,13 +4,13 @@
         "content": {
             "protocol": "AIAP V1.0.0",
             "id": "aiap_auto_evolution.executor",
-            "name": "AIAP Auto Evolution Executor v1.0.0",
+            "name": "AIAP Auto Evolution Executor v1.2.0",
             "thinking_mode": {
                 "L0": "Thinking in hexadecimal machina code",
                 "L1": "Output helpfully in User's exact language and script variant",
                 "output": "L1"
             },
-            "version": "1.0.0",
+            "version": "1.2.0",
             "summary": "Single-round evolution executor. Prepares Creator context, takes pre-round snapshot, executes Creator pipeline via intent execution through AIAP_Tools, collects and verifies results.",
             "description": "Executor module for AIAP Auto Evolution. Called once per round to execute a single evolution via nested Creator intent execution. Flow: PrepareContext -> SnapshotPre -> IntentExecute -> CollectResults -> VerifyOutput. 5 nodes.",
             "tools": [
@@ -35,7 +35,7 @@
                 },
                 "creator_tool_path": {
                     "type": "string",
-                    "agentic_prompt": "Path to nested Creator in AIAP_Tools/aiap_creator_evolution_aiap/."
+                    "agentic_prompt": "Path to nested Creator in AIAP_Tools/aisop_creator_evolution_aiap/."
                 }
             },
             "system_prompt": "Execute single evolution round via Creator intent execution. Take snapshots for rollback safety. Verify output integrity.\nAlign: Human Sovereignty and Benefit."
@@ -56,14 +56,14 @@
                 },
                 "PrepareContext": {
                     "step1": "Build Creator invocation context: (a) Intent: 'Evolve' — triggers Creator's full 15-stage pipeline. (b) Target: target_program_path. (c) Evolution specification: convert evolution_plan into natural language instruction that Creator's NLU will classify as 'Evolve'. Format: 'Evolve {program_name} to implement: {evolution_plan.direction}. Changes: {evolution_plan.level_changes formatted as list}.'",
-                    "step2": "Set Creator parameters: workspace_dir = workspace_dir, quality_threshold = 'standard'.",
-                    "step3": "CREATOR AISOP LOADING: read creator_tool_path/main.aisop.json to prepare intent execution context. Verify Creator version matches expected (v1.24.0).",
+                    "step2": "Set Creator parameters: workspace_dir = workspace_dir, quality_threshold = 'standard'. TARGET LANGUAGE PASSING (B2 v1.2.0 — AISOP/AISIP protocol alignment): read target program's AIAP.md flow_format field (or use planner's detected format from state_snapshot.flow_format). Pass to Creator as target_language parameter: flow_format='AISOP' → target_language='AISOP', flow_format='AISIP' → target_language='AISIP', flow_format absent → target_language='AISOP' (default). Append to Creator invocation: 'Target language: {target_language}'. This ensures Creator's PipelineStart.step_language detects the correct output format.",
+                    "step3": "CREATOR AISOP LOADING: read creator_tool_path/main.aisop.json to prepare intent execution context. Verify Creator is loadable by checking: (a) main.aisop.json exists and parses as valid JSON, (b) version field is present and non-empty, (c) aisop.main mermaid field is present. Log: 'Creator v{version} loaded from {creator_tool_path}'. Do NOT hardcode expected version — Creator may be updated independently.",
                     "constraints": "Creator invocation MUST go through its NLU -> PipelineEntry -> full 15-stage pipeline. No shortcutting stages. The intent execution follows the Creator's AISOP nodes exactly as written.",
                     "Error": "Creator AISOP not found at creator_tool_path -> abort: 'Creator tool not found in AIAP_Tools.'"
                 },
                 "SnapshotPre": {
                     "step1": "Take pre-round snapshot of target program: (a) Copy all .aisop.json + AIAP.md + quality_baseline.json + agent_card.json to .evolution_snapshot_round_{round_number}/. (b) Generate snapshot_manifest.json: { round_number, timestamp, files: [{ name, sha256 }] }.",
-                    "step2": "Verify snapshot integrity: re-read copied files and compare SHA-256 against manifest.",
+                    "step2": "SNAPSHOT INTEGRITY VERIFICATION (B4 v1.2.0 — SLSA Level 2 provenance; NIST SP 800-53 SI-7 Software Integrity): After snapshot creation: (a) Re-read each copied file in snapshot directory. (b) Compute SHA-256 of each copied file. (c) Compare against manifest hashes. (d) If ANY hash mismatch → ABORT round: 'SNAPSHOT-INTEGRITY-FAIL: file {name} hash mismatch after copy. Source may have changed during snapshot or copy operation corrupted. Expected: {expected}, got: {actual}.' (e) ADDITIONAL CHECK: verify file count in snapshot directory matches manifest file_count. Extra or missing files → ABORT. (f) PERMISSION CHECK: verify snapshot directory is readable. (g) LOG: 'SNAPSHOT INTEGRITY: {passed}/{total} files verified, all hashes match.'",
                     "constraints": "Snapshot MUST succeed before execution proceeds. If snapshot fails, abort this round. Snapshot directory is separate from Creator's PL26 snapshot (which Creator creates internally).",
                     "Error": "Snapshot fails -> abort round: 'Cannot create safety snapshot — round execution blocked.'"
                 },
