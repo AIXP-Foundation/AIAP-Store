@@ -13,7 +13,7 @@
 
 ## What is AIAP Store?
 
-AIAP Store is the central distribution platform for **AIAP programs** — AI capability packages that conform to the [AIAP Protocol](https://github.com/AISOP-AIAP-SoulBot/AIAP). It serves the same role for AI programs that npm serves for JavaScript packages or Docker Hub serves for container images.
+AIAP Store is the central distribution platform for **AIAP programs** — AI capability packages that conform to the [AIAP Protocol](https://github.com/AIXP-Foundation/AIAP). It serves the same role for AI programs that npm serves for JavaScript packages or Docker Hub serves for container images.
 
 Every program on AIAP Store is:
 
@@ -24,20 +24,6 @@ Every program on AIAP Store is:
 
 ---
 
-## The Ecosystem
-
-AIAP Store is part of a tripartite governance chain:
-
-```
-aisop.dev  (Seed Layer)      — Defines the .aisop.json format
-aiap.dev   (Authority Layer) — Defines governance rules and quality standards
-soulbot.dev (Executor Layer) — Reference runtime that executes AIAP programs
-           ↓
-aiap-store  (Distribution)  — Marketplace for discovering and sharing AIAP programs
-```
-
----
-
 ## What is an AIAP Program?
 
 An AIAP program (`*_aiap/`) is a structured AI capability package:
@@ -45,7 +31,7 @@ An AIAP program (`*_aiap/`) is a structured AI capability package:
 ```
 my_program_aiap/
 ├── AIAP.md            # Governance contract (identity, tools, trust level, license)
-├── main.aisop.json    # Entry point with mermaid execution flow
+├── main.aisop.json    # Entry point with Mermaid or JSON flow execution graph
 └── module.aisop.json  # Functional module
 ```
 
@@ -67,13 +53,16 @@ To publish a program on AIAP Store, it must:
 
 ---
 
-## Related Projects
+## AIXP Foundation [www.aixp.dev](https://aixp.dev)
 
-| Project | Description | Link |
-|---------|-------------|------|
-| **AIAP Protocol** | The open standard governing all AIAP programs | [aiap.dev](https://aiap.dev) |
-| **SoulBot** | AI Agent Framework — run and create AIAP programs | [soulbot.dev](https://soulbot.dev) |
-| **AIAP Creator** | Tool for generating and validating AIAP programs | Included in SoulBot |
+The AIXP Foundation develops and maintains four core projects:
+
+| Project | Description | Website |
+|---------|-------------|---------|
+| [AIBP](https://aibp.dev) | AI Bot Protocol — AI agents social communication and trust layer | aibp.dev |
+| [AIAP](https://aiap.dev) | AI Application Protocol — governance, quality, and compliance framework | aiap.dev |
+| [AISOP](https://aisop.dev) | AI Standard Operating Protocol — Mermaid + JSON flow program definition | aisop.dev |
+| [SoulBot](https://soulbot.dev) | AI agents runtime and framework — executes AISOP programs under AIAP governance | soulbot.dev |
 
 ---
 
@@ -95,4 +84,4 @@ AIAP Store is a distribution platform. **Each AIAP program carries its own licen
 
 ---
 
-Align: Human Sovereignty and Benefit. Version: AIAP V1.0.0. <www.aiap.dev>
+Align Axiom 0: Human Sovereignty and Wellbeing. Version: AIAP V1.0.0. www.aiap.dev
