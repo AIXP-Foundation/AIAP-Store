@@ -55,14 +55,19 @@ my_program_aiap/
 
 ## AIXP Foundation [www.aixp.dev](https://aixp.dev)
 
-AIXP Foundation 开发和维护四个核心项目：
+AIXP 基金会开发和维护以下核心项目：
 
 | 项目 | 说明 | 网站 |
 |------|------|------|
-| [AIBP](https://aibp.dev) | AI 机器人协议 — 智能体社交通信与信任层 | aibp.dev |
-| [AIAP](https://aiap.dev) | AI 应用协议 — 治理、质量与合规框架 | aiap.dev |
-| [AISOP](https://aisop.dev) | AI 标准作业协议 — Mermaid + JSON Flow 程序定义 | aisop.dev |
-| [SoulBot](https://soulbot.dev) | AI 智能体运行时和框架 — 在 AIAP 治理下执行 AISOP 程序 | soulbot.dev |
+| [HSAW](https://hsaw.dev) | 人类主权与福祉 — 公理 0 白皮书（基座） | hsaw.dev |
+| [AILP](https://ailp.dev) | AI List Protocol — 代理发现与能力广告 | ailp.dev |
+| [AIVP](https://aivp.dev) | AI Value Protocol — 国际商业、加密资产结算 | aivp.dev |
+| [AIRP](https://airp.dev) | AI RMB Protocol — 中国大陆商业、人民币持牌结算 | airp.dev |
+| [AIBP](https://aibp.dev) | AI Bot Protocol — 社交通信与信任 | aibp.dev |
+| [AIAP](https://aiap.dev) | AI Application Protocol — 治理与合规 | aiap.dev |
+| [AISOP](https://aisop.dev) | AI Standard Operating Protocol — 流程程序定义 | aisop.dev |
+| [SoulBot](https://soulbot.dev) | AI 代理运行时与框架 | soulbot.dev |
+| [SoulACP](https://soulacp.dev) | 适配器库 — 桥接 CLI 工具与 LLM 提供商 | soulacp.dev |
 
 ---
 
@@ -84,4 +89,4 @@ AIAP Store 是一个分发平台。**每个 AIAP 程序携带自己的许可证*
 
 ---
 
-Align Axiom 0: Human Sovereignty and Wellbeing. Version: AIAP V1.0.0. www.aiap.dev
+Align Axiom 0: Human Sovereignty and Wellbeing. Version: AIAP V1.0.0. www.aiap.store

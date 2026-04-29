@@ -55,14 +55,19 @@ To publish a program on AIAP Store, it must:
 
 ## AIXP Foundation [www.aixp.dev](https://aixp.dev)
 
-The AIXP Foundation develops and maintains four core projects:
+The AIXP Foundation develops and maintains the following core projects:
 
 | Project | Description | Website |
 |---------|-------------|---------|
-| [AIBP](https://aibp.dev) | AI Bot Protocol — AI agents social communication and trust layer | aibp.dev |
-| [AIAP](https://aiap.dev) | AI Application Protocol — governance, quality, and compliance framework | aiap.dev |
-| [AISOP](https://aisop.dev) | AI Standard Operating Protocol — Mermaid + JSON flow program definition | aisop.dev |
-| [SoulBot](https://soulbot.dev) | AI agents runtime and framework — executes AISOP programs under AIAP governance | soulbot.dev |
+| [HSAW](https://hsaw.dev) | Human Sovereignty and Wellbeing — Axiom 0 white paper (foundation) | hsaw.dev |
+| [AILP](https://ailp.dev) | AI List Protocol — agent discovery and capability advertising | ailp.dev |
+| [AIVP](https://aivp.dev) | AI Value Protocol — international commerce, crypto asset settlement | aivp.dev |
+| [AIRP](https://airp.dev) | AI RMB Protocol — Mainland China commerce, RMB licensed settlement | airp.dev |
+| [AIBP](https://aibp.dev) | AI Bot Protocol — social communication and trust | aibp.dev |
+| [AIAP](https://aiap.dev) | AI Application Protocol — governance and compliance | aiap.dev |
+| [AISOP](https://aisop.dev) | AI Standard Operating Protocol — flow program definition | aisop.dev |
+| [SoulBot](https://soulbot.dev) | AI agent runtime and framework | soulbot.dev |
+| [SoulACP](https://soulacp.dev) | Adapter library — bridging CLI tools and LLM providers | soulacp.dev |
 
 ---
 
@@ -84,4 +89,4 @@ AIAP Store is a distribution platform. **Each AIAP program carries its own licen
 
 ---
 
-Align Axiom 0: Human Sovereignty and Wellbeing. Version: AIAP V1.0.0. www.aiap.dev
+Align Axiom 0: Human Sovereignty and Wellbeing. Version: AIAP V1.0.0. www.aiap.store
